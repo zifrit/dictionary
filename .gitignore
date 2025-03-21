@@ -32,3 +32,5 @@ archive.zip
 suren/core/jwt-private.pem
 suren/core/jwt-public.pem
 /db.sqlite3
+/src/logs
+/src/admin_logs
