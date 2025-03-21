@@ -7,9 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-sqlalchemy = "^2.0.39"
 aiogram = "^3.19.0"
-alembic = "^1.15.1"
 pydantic-settings = "^2.8.1"
 sqladmin = "^0.20.1"
 redis = "^5.2.1"
@@ -18,6 +16,9 @@ asyncpg = "^0.30.0"
 fastapi = "^0.115.11"
 itsdangerous = "^2.2.0"
 uvicorn = "^0.34.0"
+sqlalchemy = "^2.0.39"
+alembic = "^1.15.1"
+greenlet = "^3.1.1"
 
 
 [tool.poetry.group.dev.dependencies]
