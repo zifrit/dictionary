@@ -2,7 +2,7 @@ from typing import Any, Coroutine
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, load_only
 from src.repository.base import BaseManager
 from src.models import Dictionary, Topic, Words
 
@@ -112,7 +112,36 @@ class TopicManager(BaseManager[Topic]):
 
 
 class WordsManager(BaseManager[Words]):
-    pass
+    async def get_random_three_words(self, session: AsyncSession) -> list[Words]:
+        result = await session.scalars(
+            select(self._model).order_by(func.random()).limit(3)
+        )
+        return list(result)
+
+    async def get_random_words(self, session: AsyncSession, topic_id) -> Words:
+        result = await session.scalar(
+            select(self._model)
+            .where(self._model.topic_id == topic_id)
+            .order_by(func.random())
+        )
+        return result
+
+    async def check_result(self, session: AsyncSession, topic_id):
+        count_right = await session.execute(
+            select(func.count(self._model.id)).where(
+                self._model.trys == "✅✅✅✅✅", self._model.topic_id == topic_id
+            )
+        )
+        count_right = count_right.scalar_one()
+
+        count_all = await session.execute(
+            select(func.count(self._model.id)).where(
+                self._model.topic_id == topic_id,
+            )
+        )
+        count_all = count_all.scalar_one()
+        progress = int(count_right / count_all * 100)
+        return progress
 
 
 dictionary_manager = DictionaryManager(Dictionary)

@@ -24,6 +24,9 @@ class Topic(IdCUDMixin):
     type_translation: Mapped[str] = mapped_column(
         String(), comment="Тип перевода"
     )  # for example ru-en or en-ru
+    progress: Mapped[int] = mapped_column(
+        comment="Прогресс 0-100", default=0, server_default="0"
+    )
 
     repr_columns = ["id", "name", "type_translation"]
 
@@ -35,8 +38,8 @@ class Words(IdCUDMixin):
     topic: Mapped["Topic"] = relationship(back_populates="words")
     word: Mapped[str] = mapped_column(String(), comment="Слово")
     word_translation: Mapped[str] = mapped_column(String(), comment="Перевод слова")
-    trys: Mapped[int | None] = mapped_column(
-        String(), comment="Попытки"
+    trys: Mapped[int] = mapped_column(
+        String(), comment="Попытки", default="❌❌❌❌❌", server_default="❌❌❌❌❌"
     )  # for example ✅❌✅
 
     repr_columns = ["id", "word", "word_translation"]

@@ -1,4 +1,3 @@
-import json
 import logging
 from contextlib import suppress
 
@@ -11,11 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.kbs.pagination import Pagination
 from src.kbs.topic import about_topic
 from src.states.dictionary import SearchTopic
-from src.repository.dictionary import dictionary_manager, topic_manager
+from src.repository.dictionary import topic_manager, words_manager
 from src.utils.pagination import pagination
-from src.utils.parse_json_file import parse_json
-from src.kbs.dictionary import about_dictionary
-from src.kbs.other import move_to
 
 loger = logging.getLogger("admin_log")
 
@@ -53,6 +49,7 @@ async def get_right_topic_id(
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
+Прогресс: {topic.progress}
         """
         await message.reply(text=text, reply_markup=about_topic(topic_id))
 
@@ -109,3 +106,21 @@ async def paginator_topics(
     )
     with suppress(TelegramBadRequest):
         await call.message.edit_text(text, reply_markup=reply_markup)
+
+
+@router.callback_query(F.data.startswith("back_to_topic_"))
+async def back_to_topic(call: CallbackQuery, db_session: AsyncSession):
+    topic_id = call.data.split("_")[-1]
+    topic = await topic_manager.get_by_id(db_session, id_=int(topic_id))
+    progress = await words_manager.check_result(db_session, topic.id)
+    topic.progress = progress
+
+    text = f"""
+Название: {topic.name}
+Идентификатор: {topic.id}
+Количество слов: {len(topic.words)}
+Перевод: {topic.type_translation}
+Описание: {topic.description}
+Прогресс: {topic.progress} %
+            """
+    await call.message.edit_text(text=text, reply_markup=about_topic(int(topic_id)))
