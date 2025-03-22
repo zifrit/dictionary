@@ -34,3 +34,4 @@ suren/core/jwt-public.pem
 /db.sqlite3
 /src/logs
 /src/admin_logs
+slq_test.py

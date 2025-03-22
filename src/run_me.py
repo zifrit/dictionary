@@ -6,13 +6,15 @@ from src.core.settings import bot, dp
 from src.core.logger import LOGGING
 from src.core.middleware import DatabaseMiddleware
 
-from src.handlers import dectionary
+from src.handlers import dictionary, topic
 
 loger = logging.getLogger(__name__)
 
 commands = [
     types.BotCommand(command="start", description="запуск бота"),
     types.BotCommand(command="add_topic", description="Добавить топик слов"),
+    types.BotCommand(command="list_dictionary", description="Список словарей"),
+    types.BotCommand(command="search_dictionary", description="Поиск словаря"),
 ]
 
 
@@ -31,6 +33,7 @@ async def stop_bot():
 async def main():
     # регистрация роутов
     dp.include_router(dectionary.router)
+    dp.include_router(topic.router)
 
     # регистрация мидлварей
     dp.update.middleware.register(DatabaseMiddleware())

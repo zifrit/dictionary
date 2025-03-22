@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.create_table(
         "dictionary",
         sa.Column(
-            "name", sa.String(), nullable=False, comment="Название словаря"
+            "name", sa.String(length=30), nullable=False, comment="Название словаря"
         ),
         sa.Column(
             "created_at",
@@ -46,7 +46,7 @@ def upgrade() -> None:
     op.create_table(
         "topic",
         sa.Column(
-            "name", sa.String(), nullable=False, comment="Название топика"
+            "name", sa.String(length=30), nullable=False, comment="Название топика"
         ),
         sa.Column(
             "created_at",
