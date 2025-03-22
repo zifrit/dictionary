@@ -57,6 +57,7 @@ async def get_right_topic_id(
 @router.callback_query(F.data == "list_topics")
 async def list_topics(call: CallbackQuery, state: FSMContext, db_session: AsyncSession):
     state_date = await state.get_data()
+    await state.clear()
     dictionary_id = state_date.get("dictionary_id")
     text, reply_markup = await pagination(
         session=db_session,
