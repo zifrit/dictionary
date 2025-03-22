@@ -6,13 +6,13 @@ from src.core.settings import bot, dp
 from src.core.logger import LOGGING
 from src.core.middleware import DatabaseMiddleware
 
-# from src.handlers import
+from src.handlers import dectionary
 
 loger = logging.getLogger(__name__)
 
 commands = [
     types.BotCommand(command="start", description="запуск бота"),
-    types.BotCommand(command="menu", description="Меню"),
+    types.BotCommand(command="add_topic", description="Добавить топик слов"),
 ]
 
 
@@ -30,7 +30,7 @@ async def stop_bot():
 
 async def main():
     # регистрация роутов
-    # dp.include_router(buy_virtual_network.router)
+    dp.include_router(dectionary.router)
 
     # регистрация мидлварей
     dp.update.middleware.register(DatabaseMiddleware())
