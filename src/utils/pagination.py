@@ -33,13 +33,16 @@ async def pagination(
     model_manage: DictionaryManager | TopicManager,
     fields: dict[str, str | dict],
     start: bool = True,
+    filters: dict[str, str | int] | None = None,
     callback_data: Pagination | None = None,
     prev_action_text: str | None = None,
     nex_action_text: str | None = None,
 ) -> tuple[str, InlineKeyboardMarkup] | tuple[str, None] | None:
+    if filters is None:
+        filters = dict()
     if start:
         objects, count_objects = await model_manage.get_pagination(
-            session=session, limit=count_data_in_page
+            session=session, limit=count_data_in_page, **filters
         )
         count_page = (
             count_objects // count_data_in_page + 1
@@ -76,7 +79,7 @@ async def pagination(
                 page = callback_data.page
                 nex_action_text = None
         objects, count_objects = await model_manage.get_pagination(
-            session=session, limit=count_data_in_page, offset=page
+            session=session, limit=count_data_in_page, offset=page, **filters
         )
         count_page = (
             count_objects // count_data_in_page + 1
