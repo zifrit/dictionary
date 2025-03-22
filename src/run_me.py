@@ -15,6 +15,7 @@ commands = [
     types.BotCommand(command="add_topic", description="Добавить топик слов"),
     types.BotCommand(command="list_dictionary", description="Список словарей"),
     types.BotCommand(command="search_dictionary", description="Поиск словаря"),
+    types.BotCommand(command="search_topic", description="Поиск топика"),
 ]
 
 
@@ -32,7 +33,7 @@ async def stop_bot():
 
 async def main():
     # регистрация роутов
-    dp.include_router(dectionary.router)
+    dp.include_router(dictionary.router)
     dp.include_router(topic.router)
 
     # регистрация мидлварей

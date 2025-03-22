@@ -10,4 +10,4 @@ class SearchDictionary(StatesGroup):
 
 
 class SearchTopic(StatesGroup):
-    dictionary_id = State()
+    topic_id = State()
