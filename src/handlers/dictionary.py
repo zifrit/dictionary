@@ -47,13 +47,13 @@ async def get_right_document(message: Message, state: FSMContext):
         except json.decoder.JSONDecodeError:
             await message.reply("В файле ошибка убедитесь что он соответсвуте шаблону")
         else:
-            if not await parse_json(
+            if await parse_json(
                 json_data,
                 bot=message.bot,
                 chat_id=message.chat.id,
                 tg_id=message.from_user.id,
             ):
-                ...
+                await message.reply("Проблема с данными")
             else:
                 await message.reply("Данные успешно сохранились")
                 await state.clear()
