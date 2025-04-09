@@ -1,8 +1,13 @@
+import typing
 from typing import List
 
 from src.models.base import IdCUDMixin
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, ForeignKey, DateTime, Integer, Text, Boolean
+from sqlalchemy import (
+    String,
+    ForeignKey,
+    UniqueConstraint,
+)
 
 
 class Dictionary(IdCUDMixin):
@@ -24,11 +29,30 @@ class Topic(IdCUDMixin):
     type_translation: Mapped[str] = mapped_column(
         String(), comment="Тип перевода"
     )  # for example ru-en or en-ru
+    tg_user_progress: Mapped[List["TgUserTopicProgress"]] = relationship(
+        back_populates="topic"
+    )
+    trys: Mapped[List["WordTrys"]] = relationship(back_populates="topic")
+
+    repr_columns = ["id", "name", "type_translation"]
+
+
+class TgUserTopicProgress(IdCUDMixin):
+    __tablename__ = "tg_user_topic_progress"
+    __table_args__ = (
+        UniqueConstraint(
+            "topic_id", "tg_user_id", name="idx_unique_topic_id_tg_user_id"
+        ),
+    )
+
     progress: Mapped[int] = mapped_column(
         comment="Прогресс 0-100", default=0, server_default="0"
     )
+    tg_user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.tg_id"))
+    topic_id: Mapped[int] = mapped_column(ForeignKey("topic.id"))
+    topic: Mapped["Topic"] = relationship(back_populates="tg_user_progress")
 
-    repr_columns = ["id", "name", "type_translation"]
+    repr_columns = ["id", "progress", "tg_user_id"]
 
 
 class Words(IdCUDMixin):
@@ -38,8 +62,24 @@ class Words(IdCUDMixin):
     topic: Mapped["Topic"] = relationship(back_populates="words")
     word: Mapped[str] = mapped_column(String(), comment="Слово")
     word_translation: Mapped[str] = mapped_column(String(), comment="Перевод слова")
+    trys: Mapped[List["WordTrys"]] = relationship(back_populates="word")
+
+    repr_columns = ["id", "word", "word_translation"]
+
+
+class WordTrys(IdCUDMixin):
+    __tablename__ = "word_trys"
+    __table_args__ = (
+        UniqueConstraint("word_id", "tg_user_id", name="idx_unique_word_id_tg_user_id"),
+    )
+
+    topic_id: Mapped[int] = mapped_column(ForeignKey("topic.id"))
+    topic: Mapped["Topic"] = relationship(back_populates="trys")
+    word_id: Mapped[int] = mapped_column(ForeignKey("words.id"))
+    word: Mapped["Words"] = relationship(back_populates="trys")
     trys: Mapped[int] = mapped_column(
         String(), comment="Попытки", default="❌❌❌❌❌", server_default="❌❌❌❌❌"
     )  # for example ✅❌✅
+    tg_user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.tg_id"))
 
-    repr_columns = ["id", "word", "word_translation"]
+    repr_columns = ["tg_user_id", "word_id", "trys"]

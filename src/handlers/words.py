@@ -27,9 +27,10 @@ async def start_study_words(
 ):
     await state.clear()
     topic_id = int(call.data.split("_")[-1])
+    await topic_manager.check_started(session=db_session,topic_id=int(topic_id), tg_id=call.from_user.id)
     random_three_words = await words_manager.get_random_three_words(session=db_session)
-    current_word = await words_manager.get_random_words(
-        session=db_session, topic_id=int(topic_id)
+    current_word = await words_manager.get_random_word_trys(
+        session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id
     )
     words = [
         {
@@ -40,12 +41,12 @@ async def start_study_words(
     ]
     words.append(
         {
-            "text": current_word.word_translation,
+            "text": current_word.word.word_translation,
             "call_back_data": f"check_answer_right_{topic_id}_{current_word.id}",
         }
     )
     text = f"""
-       {current_word.word}
+       {current_word.word.word}
        
        
 Количество попыток
@@ -57,18 +58,21 @@ async def start_study_words(
 @router.callback_query(F.data.startswith("check_answer"))
 async def check_answer(call: CallbackQuery, db_session: AsyncSession):
     _, _, answer, topic_id, word_id = call.data.split("_")
-    word = await words_manager.get_by_id(db_session, id_=int(word_id))
+    word = await words_manager.get_trys(db_session, id_=int(word_id))
     word_trys = word.trys[:4]
     if answer == "wrong":
         word.trys = "❌" + word_trys
     elif answer == "right":
         word.trys = "✅" + word_trys
-        print(word.trys)
     await db_session.flush()
     progress = await words_manager.check_result(
-        session=db_session, topic_id=int(topic_id)
+        session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id
+    )
+    topic = await topic_manager.get_tg_user_progress(
+        db_session, topic_id=int(topic_id), tg_id=call.from_user.id
     )
     if progress == 100:
+        topic.progress = progress
         await call.message.edit_text(
             "Вы выучили все слова из топика",
             reply_markup=move_to(
@@ -77,15 +81,14 @@ async def check_answer(call: CallbackQuery, db_session: AsyncSession):
             ),
         )
     else:
-        topic = await topic_manager.get_by_id(db_session, id_=int(topic_id))
         topic.progress = progress
         await db_session.flush()
 
         random_three_words = await words_manager.get_random_three_words(
             session=db_session
         )
-        current_word = await words_manager.get_random_words(
-            session=db_session, topic_id=int(topic_id)
+        current_word = await words_manager.get_random_word_trys(
+            session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id
         )
         words = [
             {
@@ -96,12 +99,12 @@ async def check_answer(call: CallbackQuery, db_session: AsyncSession):
         ]
         words.append(
             {
-                "text": current_word.word_translation,
+                "text": current_word.word.word_translation,
                 "call_back_data": f"check_answer_right_{topic_id}_{current_word.id}",
             }
         )
         text = f"""
-       {current_word.word}
+       {current_word.word.word}
 
 
 Количество попыток

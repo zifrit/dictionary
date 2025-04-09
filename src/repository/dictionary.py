@@ -1,10 +1,9 @@
-from typing import Any, Coroutine
-
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, load_only
+from sqlalchemy.orm import selectinload, load_only, joinedload
+
 from src.repository.base import BaseManager
-from src.models import Dictionary, Topic, Words
+from src.models import Dictionary, Topic, Words, WordTrys, TgUserTopicProgress
 
 
 class DictionaryManager(BaseManager[Dictionary]):
@@ -82,6 +81,18 @@ class TopicManager(BaseManager[Topic]):
         )
         return result
 
+    @staticmethod
+    async def get_tg_user_progress(
+        session: AsyncSession, topic_id: int, tg_id: int
+    ) -> TgUserTopicProgress:
+        result = await session.scalar(
+            select(TgUserTopicProgress).where(
+                TgUserTopicProgress.topic_id == topic_id,
+                TgUserTopicProgress.tg_user_id == tg_id,
+            )
+        )
+        return result
+
     async def count(self, session: AsyncSession, dictionary_id: int) -> int:
         count_obj = await session.execute(
             select(func.count(self._model.id)).where(
@@ -110,6 +121,30 @@ class TopicManager(BaseManager[Topic]):
         )
         return list(result), await self.count(session, dictionary_id)
 
+    async def check_started(
+        self, session: AsyncSession, topic_id: int, tg_id: int
+    ) -> None:
+        random_word_trys = await session.scalar(
+            select(WordTrys)
+            .where(WordTrys.topic_id == topic_id, WordTrys.tg_user_id == tg_id)
+            .order_by(func.random())
+        )
+        if not random_word_trys:
+            topic = await self.get_by_id(session, topic_id)
+            topic_words = topic.words
+            session.add_all(
+                [
+                    WordTrys(
+                        word_id=word.id,
+                        tg_user_id=tg_id,
+                        topic_id=topic.id,
+                    )
+                    for word in topic_words
+                ]
+            )
+            session.add(TgUserTopicProgress(topic_id=topic_id, tg_user_id=tg_id))
+            await session.commit()
+
 
 class WordsManager(BaseManager[Words]):
     async def get_random_three_words(self, session: AsyncSession) -> list[Words]:
@@ -118,30 +153,56 @@ class WordsManager(BaseManager[Words]):
         )
         return list(result)
 
-    async def get_random_words(self, session: AsyncSession, topic_id) -> Words:
-        result = await session.scalar(
+    async def get_random_word_trys(
+        self,
+        session: AsyncSession,
+        topic_id: int,
+        tg_id: int,
+    ) -> WordTrys:
+        random_word = await session.scalar(
             select(self._model)
             .where(self._model.topic_id == topic_id)
             .order_by(func.random())
         )
-        return result
+        word_trys = await session.scalar(
+            select(WordTrys)
+            .options(
+                joinedload(WordTrys.word).load_only(Words.word, Words.word_translation)
+            )
+            .where(WordTrys.word_id == random_word.id, WordTrys.tg_user_id == tg_id)
+        )
+        return word_trys
 
-    async def check_result(self, session: AsyncSession, topic_id):
+    @staticmethod
+    async def check_result(session: AsyncSession, topic_id: int, tg_id: int) -> int:
         count_right = await session.execute(
-            select(func.count(self._model.id)).where(
-                self._model.trys == "✅✅✅✅✅", self._model.topic_id == topic_id
+            select(func.count(WordTrys.id)).where(
+                WordTrys.trys == "✅✅✅✅✅",
+                WordTrys.topic_id == topic_id,
+                WordTrys.tg_user_id == tg_id,
             )
         )
         count_right = count_right.scalar_one()
 
         count_all = await session.execute(
-            select(func.count(self._model.id)).where(
-                self._model.topic_id == topic_id,
+            select(func.count(WordTrys.id)).where(
+                WordTrys.topic_id == topic_id,
+                WordTrys.tg_user_id == tg_id,
             )
         )
         count_all = count_all.scalar_one()
         progress = int(count_right / count_all * 100)
         return progress
+
+    @staticmethod
+    async def get_trys(session: AsyncSession, id_: int) -> WordTrys:
+        return await session.scalar(
+            select(WordTrys)
+            .options(
+                joinedload(WordTrys.word).load_only(Words.word, Words.word_translation)
+            )
+            .where(WordTrys.id == id_)
+        )
 
 
 dictionary_manager = DictionaryManager(Dictionary)

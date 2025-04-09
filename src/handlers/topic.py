@@ -38,20 +38,25 @@ async def get_right_topic_id(
     message_text = message.text
     try:
         topic_id = int(message_text)
-        await state.update_data(topic_id=topic_id)
-    except ValueError:
-        await message.reply("Идентификатор должен быть числом")
-    else:
         topic = await topic_manager.get_by_id(db_session, id_=topic_id)
-        text = f"""
+        user_progress = await topic_manager.get_tg_user_progress(
+            db_session, topic_id=topic_id, tg_id=message.from_user.id
+        )
+        if topic:
+            await state.update_data(topic_id=topic_id)
+            text = f"""
 Название: {topic.name}
 Идентификатор: {topic.id}
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
-Прогресс: {topic.progress}
-        """
-        await message.reply(text=text, reply_markup=about_topic(topic_id))
+Прогресс: {user_progress.progress if user_progress else 0}%
+                    """
+            await message.reply(text=text, reply_markup=about_topic(topic_id))
+        else:
+            await message.reply("Топик с таким идентификатором не найден")
+    except ValueError:
+        await message.reply("Идентификатор должен быть числом")
 
 
 @router.callback_query(F.data == "list_topics")
@@ -113,7 +118,12 @@ async def paginator_topics(
 async def back_to_topic(call: CallbackQuery, db_session: AsyncSession):
     topic_id = call.data.split("_")[-1]
     topic = await topic_manager.get_by_id(db_session, id_=int(topic_id))
-    progress = await words_manager.check_result(db_session, topic.id)
+    progress = await words_manager.check_result(
+        session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id
+    )
+    tg_user_progress = await topic_manager.get_tg_user_progress(
+        db_session, topic_id=int(topic_id), tg_id=call.from_user.id
+    )
     topic.progress = progress
 
     text = f"""
@@ -122,6 +132,6 @@ async def back_to_topic(call: CallbackQuery, db_session: AsyncSession):
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
-Прогресс: {topic.progress} %
+Прогресс: {tg_user_progress.progress} %
             """
     await call.message.edit_text(text=text, reply_markup=about_topic(int(topic_id)))

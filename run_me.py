@@ -6,7 +6,7 @@ from src.core.settings import bot, dp
 from src.core.logger import LOGGING
 from src.core.middleware import DatabaseMiddleware
 
-from src.handlers import dictionary, topic, words
+from src.handlers import dictionary, topic, words, start
 
 loger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ async def stop_bot():
 
 async def main():
     # регистрация роутов
+    dp.include_router(start.router)
     dp.include_router(dictionary.router)
     dp.include_router(topic.router)
     dp.include_router(words.router)
