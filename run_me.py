@@ -1,12 +1,12 @@
 import asyncio
 import logging.config
+
 from aiogram import types
 
-from src.core.settings import bot, dp
 from src.core.logger import LOGGING
 from src.core.middleware import DatabaseMiddleware
-
-from src.handlers import dictionary, topic, words, start
+from src.core.settings import bot, dp
+from src.handlers import dictionary, start, topic, words, battle
 
 loger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ commands = [
 
 # Функция, которая выполнится когда бот запустится
 async def start_bot():
-    await bot.send_message(288680459, f"Бот запущен")
+    await bot.send_message(288680459, "Бот запущен")
     loger.info("Бот успешно запущен.")
 
 
@@ -34,6 +34,7 @@ async def stop_bot():
 async def main():
     # регистрация роутов
     dp.include_router(start.router)
+    # dp.include_router(battle.router)
     dp.include_router(dictionary.router)
     dp.include_router(topic.router)
     dp.include_router(words.router)

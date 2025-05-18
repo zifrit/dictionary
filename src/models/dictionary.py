@@ -1,5 +1,5 @@
 import typing
-from typing import List
+from typing import List, Dict
 
 from src.models.base import IdCUDMixin
 from sqlalchemy.orm import mapped_column, Mapped, relationship
@@ -7,6 +7,7 @@ from sqlalchemy import (
     String,
     ForeignKey,
     UniqueConstraint,
+    JSON,
 )
 
 
@@ -33,6 +34,7 @@ class Topic(IdCUDMixin):
         back_populates="topic"
     )
     trys: Mapped[List["WordTrys"]] = relationship(back_populates="topic")
+    battles: Mapped[List["TopicBattles"]] = relationship(back_populates="topic")
 
     repr_columns = ["id", "name", "type_translation"]
 
@@ -83,3 +85,13 @@ class WordTrys(IdCUDMixin):
     tg_user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.tg_id"))
 
     repr_columns = ["tg_user_id", "word_id", "trys"]
+
+
+class TopicBattles(IdCUDMixin):
+    __tablename__ = "topic_battles"
+
+    topic_id: Mapped[int] = mapped_column(ForeignKey("topic.id"))
+    topic: Mapped["Topic"] = relationship(back_populates="battles")
+    players: Mapped[Dict] = mapped_column(JSON)
+    words: Mapped[List[Dict]] = mapped_column(JSON)
+    used_words: Mapped[List[Dict] | None] = mapped_column(JSON)

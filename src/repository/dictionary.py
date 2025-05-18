@@ -3,7 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, load_only, joinedload
 
 from src.repository.base import BaseManager
-from src.models import Dictionary, Topic, Words, WordTrys, TgUserTopicProgress
+from src.models import (
+    Dictionary,
+    Topic,
+    Words,
+    WordTrys,
+    TgUserTopicProgress,
+    TopicBattles,
+    TgUser,
+)
 
 
 class DictionaryManager(BaseManager[Dictionary]):
@@ -120,6 +128,55 @@ class TopicManager(BaseManager[Topic]):
             )
         )
         return list(result), await self.count(session, dictionary_id)
+
+    async def get_random_topic(self, session: AsyncSession) -> Topic:
+        return await session.scalar(select(self._model).order_by(func.random()))
+
+    @staticmethod
+    async def start_battle(
+        session: AsyncSession,
+        chat_id: int,
+        topic_id: int | None = None,
+        players: list[str] | None = None,
+    ) -> TopicBattles:
+
+        if not topic_id:
+            topic = await topic_manager.get_random_topic(session)
+            topic_id = topic.id
+        if not players:
+            tg_users = await session.scalars(
+                select(TgUser).where(TgUser.chats.contains([str(chat_id)]))
+            )
+            players = {tg_user.tg_id: 0 for tg_user in tg_users}
+        else:
+            tg_users = await session.scalars(
+                select(TgUser).where(
+                    TgUser.username.in_(players),
+                    TgUser.chats.contains([str(chat_id)]),
+                )
+            )
+            players = {tg_user.tg_id: 0 for tg_user in tg_users}
+        rwo_words = await session.scalars(
+            select(Words).where(Words.topic_id == topic_id)
+        )
+        words = [
+            {"word": word.word, "translate": word.word_translation}
+            for word in rwo_words
+        ]
+        battle = TopicBattles(
+            topic_id=topic_id,
+            players=players,
+            words=words,
+        )
+        session.add(battle)
+        await session.commit()
+        return battle
+
+    @staticmethod
+    async def get_battle(session: AsyncSession, battle_id: int) -> TopicBattles:
+        return await session.scalar(
+            select(TopicBattles).where(TopicBattles.id == battle_id)
+        )
 
     async def check_started(
         self, session: AsyncSession, topic_id: int, tg_id: int

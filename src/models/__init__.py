@@ -5,5 +5,6 @@ from src.models.dictionary import (
     Words,
     WordTrys,
     TgUserTopicProgress,
+    TopicBattles,
 )
 from src.models.tg_users import TgUser
