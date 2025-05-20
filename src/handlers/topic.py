@@ -100,7 +100,7 @@ async def paginator_topics(
         filters={"dictionary_id": dictionary_id},
         nex_action_text="next_page_topic",
         prev_action_text="prev_page_topic",
-        callback_data=callback_data,
+        pagination_callback_data=callback_data,
         start=False,
         fields={
             "name": "Название",

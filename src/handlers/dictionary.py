@@ -66,6 +66,8 @@ async def list_dictionary(message: Message, db_session: AsyncSession):
         count_data_in_page=3,
         model_manage=dictionary_manager,
         nex_action_text="next_page_dictionary",
+        title_key="name",
+        item_callback_data="dictionary",
         fields={
             "name": "Название",
             "id": "Идентификатор",
@@ -89,7 +91,9 @@ async def paginator_dictionary(
         model_manage=dictionary_manager,
         nex_action_text="next_page_dictionary",
         prev_action_text="prev_page_dictionary",
-        callback_data=callback_data,
+        pagination_callback_data=callback_data,
+        title_key="name",
+        item_callback_data="dictionary",
         start=False,
         fields={
             "name": "Название",

@@ -9,14 +9,14 @@ class Pagination(CallbackData, prefix="pagination"):
     count_page: int
 
 
-def pagination(
+def create_pagination_buttons(
     back_callback: str | None = None,
     back_text: str | None = None,
     name_prev_action: str | None = None,
     name_nex_action: str | None = None,
     page: int = 1,
     count_page: int = 1,
-) -> InlineKeyboardMarkup:
+) -> InlineKeyboardBuilder:
     if name_prev_action and name_nex_action:
         builder = InlineKeyboardBuilder()
         builder.row(
@@ -40,7 +40,7 @@ def pagination(
             builder.row(
                 InlineKeyboardButton(text=back_text, callback_data=back_callback),
             )
-        return builder.as_markup()
+        return builder
     elif name_prev_action:
         builder = InlineKeyboardBuilder()
         builder.row(
@@ -59,7 +59,7 @@ def pagination(
             builder.row(
                 InlineKeyboardButton(text=back_text, callback_data=back_callback),
             )
-        return builder.as_markup()
+        return builder
     elif name_nex_action:
         builder = InlineKeyboardBuilder()
         builder.row(
@@ -78,7 +78,7 @@ def pagination(
             builder.row(
                 InlineKeyboardButton(text=back_text, callback_data=back_callback),
             )
-        return builder.as_markup()
+        return builder
     else:
         builder = InlineKeyboardBuilder()
         builder.row(
@@ -92,4 +92,4 @@ def pagination(
             builder.row(
                 InlineKeyboardButton(text=back_text, callback_data=back_callback),
             )
-        return builder.as_markup()
+        return builder
