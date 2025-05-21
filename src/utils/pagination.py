@@ -91,7 +91,6 @@ async def pagination(
             item_inline_buttons = item_buttons(
                 data=objects, title_key=title_key, item_callback_data=item_callback_data
             )
-            print(item_inline_buttons)
 
         text = prep_text(objects, fields)
         if 0 <= count_objects <= count_data_in_page:
@@ -149,7 +148,6 @@ async def pagination(
             item_inline_buttons = item_buttons(
                 data=objects, title_key=title_key, item_callback_data=item_callback_data
             )
-            print(item_inline_buttons)
 
         return (
             "\n\n".join(text),

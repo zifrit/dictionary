@@ -32,7 +32,7 @@ async def get_wrong_topic_id(message: Message):
 
 
 @router.message(SearchTopic.topic_id)
-async def get_right_topic_id(
+async def get_bio_topic_type_1(
     message: Message, db_session: AsyncSession, state: FSMContext
 ):
     message_text = message.text
@@ -70,6 +70,8 @@ async def list_topics(call: CallbackQuery, state: FSMContext, db_session: AsyncS
         model_manage=topic_manager,
         filters={"dictionary_id": dictionary_id},
         nex_action_text="next_page_topic",
+        title_key="name",
+        item_callback_data="topic",
         fields={
             "name": "Название",
             "id": "Идентификатор",
@@ -79,7 +81,7 @@ async def list_topics(call: CallbackQuery, state: FSMContext, db_session: AsyncS
         },
     )
     with suppress(TelegramBadRequest):
-        await call.message.answer(text, reply_markup=reply_markup)
+        await call.message.edit_text(text, reply_markup=reply_markup)
 
 
 @router.callback_query(
@@ -101,6 +103,8 @@ async def paginator_topics(
         nex_action_text="next_page_topic",
         prev_action_text="prev_page_topic",
         pagination_callback_data=callback_data,
+        title_key="name",
+        item_callback_data="topic",
         start=False,
         fields={
             "name": "Название",
@@ -135,3 +139,22 @@ async def back_to_topic(call: CallbackQuery, db_session: AsyncSession):
 Прогресс: {tg_user_progress.progress} %
             """
     await call.message.edit_text(text=text, reply_markup=about_topic(int(topic_id)))
+
+
+@router.callback_query(F.data.startswith("topic_"))
+async def get_bio_topic_type_2(call: CallbackQuery, db_session: AsyncSession):
+    topic_id = int(call.data.split("_")[-1])
+    topic = await topic_manager.get_by_id(db_session, id_=topic_id)
+    user_progress = await topic_manager.get_tg_user_progress(
+        db_session, topic_id=topic_id, tg_id=call.from_user.id
+    )
+    if topic:
+        text = f"""
+Название: {topic.name}
+Идентификатор: {topic.id}
+Количество слов: {len(topic.words)}
+Перевод: {topic.type_translation}
+Описание: {topic.description}
+Прогресс: {user_progress.progress if user_progress else 0}%
+                        """
+        await call.message.edit_text(text=text, reply_markup=about_topic(topic_id))

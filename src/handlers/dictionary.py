@@ -118,7 +118,7 @@ async def get_wrong_dictionary_id(message: Message):
 
 
 @router.message(SearchDictionary.dictionary_id)
-async def get_right_dictionary_id(
+async def get_dictionary_bio_type_1(
     message: Message, db_session: AsyncSession, state: FSMContext
 ):
     message_text = message.text
@@ -135,3 +135,18 @@ async def get_right_dictionary_id(
 Количество топиков: {len(dictionary.topics)}
         """
         await message.reply(text=text, reply_markup=about_dictionary)
+
+
+@router.callback_query(F.data.startswith("dictionary_"))
+async def get_dictionary_bio_type_2(
+    call: CallbackQuery, db_session: AsyncSession, state: FSMContext
+):
+    dictionary_id = int(call.data.split("_")[-1])
+    dictionary = await dictionary_manager.get_by_id(db_session, id_=dictionary_id)
+    await state.update_data(dictionary_id=dictionary_id)
+    text = f"""
+Название: {dictionary.name}
+Описание: {dictionary.description}
+Количество топиков: {len(dictionary.topics)}
+            """
+    await call.message.edit_text(text=text, reply_markup=about_dictionary)
