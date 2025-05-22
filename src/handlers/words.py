@@ -27,7 +27,9 @@ async def start_study_words(
 ):
     await state.clear()
     topic_id = int(call.data.split("_")[-1])
-    await topic_manager.check_started(session=db_session,topic_id=int(topic_id), tg_id=call.from_user.id)
+    await topic_manager.check_started(
+        session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id
+    )
     random_three_words = await words_manager.get_random_three_words(session=db_session)
     current_word = await words_manager.get_random_word_trys(
         session=db_session, topic_id=int(topic_id), tg_id=call.from_user.id

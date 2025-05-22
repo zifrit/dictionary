@@ -158,3 +158,28 @@ async def get_bio_topic_type_2(call: CallbackQuery, db_session: AsyncSession):
 Прогресс: {user_progress.progress if user_progress else 0}%
                         """
         await call.message.edit_text(text=text, reply_markup=about_topic(topic_id))
+
+
+@router.callback_query(F.data.startswith("reset_topic_progress_"))
+async def reset_topic_progress(call: CallbackQuery, db_session: AsyncSession):
+    topic_id = int(call.data.split("_")[-1])
+    await topic_manager.reset_tg_user_progres(
+        db_session, topic_id=topic_id, tg_id=call.from_user.id
+    )
+
+    topic = await topic_manager.get_by_id(db_session, id_=topic_id)
+    user_progress = await topic_manager.get_tg_user_progress(
+        db_session, topic_id=topic_id, tg_id=call.from_user.id
+    )
+    if topic:
+        text = f"""
+Название: {topic.name}
+Идентификатор: {topic.id}
+Количество слов: {len(topic.words)}
+Перевод: {topic.type_translation}
+Описание: {topic.description}
+Прогресс: {user_progress.progress if user_progress else 0}%
+                            """
+
+        await call.message.delete()
+        await call.message.answer(text=text, reply_markup=about_topic(topic_id))

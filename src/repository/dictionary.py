@@ -202,6 +202,25 @@ class TopicManager(BaseManager[Topic]):
             session.add(TgUserTopicProgress(topic_id=topic_id, tg_user_id=tg_id))
             await session.commit()
 
+    @staticmethod
+    async def reset_tg_user_progres(
+        session: AsyncSession, topic_id: int, tg_id: int
+    ) -> None:
+        word_trys = await session.scalars(
+            select(WordTrys).where(
+                WordTrys.topic_id == topic_id, WordTrys.tg_user_id == tg_id
+            )
+        )
+        tg_user_topic_progress: TgUserTopicProgress = await session.scalar(
+            select(TgUserTopicProgress).where(
+                TgUserTopicProgress.topic_id == topic_id,
+                TgUserTopicProgress.tg_user_id == tg_id,
+            )
+        )
+        tg_user_topic_progress.progress = 0
+        for word_try in word_trys:  # type: WordTrys
+            word_try.trys = "❌❌❌❌❌"
+
 
 class WordsManager(BaseManager[Words]):
     async def get_random_three_words(self, session: AsyncSession) -> list[Words]:

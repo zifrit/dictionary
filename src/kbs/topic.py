@@ -8,6 +8,11 @@ def about_topic(topic_id: int) -> InlineKeyboardMarkup:
         InlineKeyboardButton(
             text="Начать изучать",
             callback_data=f"start_words_{topic_id}",
-        )
+        ),
+        InlineKeyboardButton(
+            text="Сброс прогресса",
+            callback_data=f"reset_topic_progress_{topic_id}",
+        ),
+        width=1,
     )
     return builder.as_markup()

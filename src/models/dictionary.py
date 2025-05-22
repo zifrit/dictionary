@@ -79,7 +79,7 @@ class WordTrys(IdCUDMixin):
     topic: Mapped["Topic"] = relationship(back_populates="trys")
     word_id: Mapped[int] = mapped_column(ForeignKey("words.id"))
     word: Mapped["Words"] = relationship(back_populates="trys")
-    trys: Mapped[int] = mapped_column(
+    trys: Mapped[str] = mapped_column(
         String(), comment="Попытки", default="❌❌❌❌❌", server_default="❌❌❌❌❌"
     )  # for example ✅❌✅
     tg_user_id: Mapped[int] = mapped_column(ForeignKey("tg_users.tg_id"))
