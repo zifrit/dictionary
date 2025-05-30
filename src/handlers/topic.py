@@ -149,6 +149,7 @@ async def get_bio_topic_type_1(
         user_progress = await topic_manager.get_tg_user_progress(
             db_session, topic_id=topic_id, tg_id=message.from_user.id
         )
+        progress = user_progress.progress if user_progress else 0
         if topic:
             await state.update_data(topic_id=topic_id)
             text = f"""
@@ -157,9 +158,11 @@ async def get_bio_topic_type_1(
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
-Прогресс: {user_progress.progress if user_progress else 0}%
+Прогресс: {progress}%
                     """
-            await message.reply(text=text, reply_markup=about_topic(topic_id))
+            await message.reply(
+                text=text, reply_markup=about_topic(topic_id, start=progress <= 0)
+            )
         else:
             await message.reply("Топик с таким идентификатором не найден")
     except ValueError:
@@ -245,7 +248,10 @@ async def back_to_topic(call: CallbackQuery, db_session: AsyncSession):
 Описание: {topic.description}
 Прогресс: {tg_user_progress.progress} %
             """
-    await call.message.edit_text(text=text, reply_markup=about_topic(int(topic_id)))
+    await call.message.edit_text(
+        text=text,
+        reply_markup=about_topic(int(topic_id), start=tg_user_progress.progress <= 0),
+    )
 
 
 @router.callback_query(F.data.startswith("topic_"))
@@ -255,6 +261,7 @@ async def get_bio_topic_type_2(call: CallbackQuery, db_session: AsyncSession):
     user_progress = await topic_manager.get_tg_user_progress(
         db_session, topic_id=topic_id, tg_id=call.from_user.id
     )
+    progress = user_progress.progress if user_progress else 0
     if topic:
         text = f"""
 Название: {topic.name}
@@ -262,9 +269,11 @@ async def get_bio_topic_type_2(call: CallbackQuery, db_session: AsyncSession):
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
-Прогресс: {user_progress.progress if user_progress else 0}%
+Прогресс: {progress}%
                         """
-        await call.message.edit_text(text=text, reply_markup=about_topic(topic_id))
+        await call.message.edit_text(
+            text=text, reply_markup=about_topic(topic_id, start=progress <= 0)
+        )
 
 
 @router.callback_query(F.data.startswith("reset_topic_progress_"))
@@ -278,6 +287,7 @@ async def reset_topic_progress(call: CallbackQuery, db_session: AsyncSession):
     user_progress = await topic_manager.get_tg_user_progress(
         db_session, topic_id=topic_id, tg_id=call.from_user.id
     )
+    progress = user_progress.progress if user_progress else 0
     if topic:
         text = f"""
 Название: {topic.name}
@@ -285,8 +295,10 @@ async def reset_topic_progress(call: CallbackQuery, db_session: AsyncSession):
 Количество слов: {len(topic.words)}
 Перевод: {topic.type_translation}
 Описание: {topic.description}
-Прогресс: {user_progress.progress if user_progress else 0}%
+Прогресс: {progress}%
                             """
 
         await call.message.delete()
-        await call.message.answer(text=text, reply_markup=about_topic(topic_id))
+        await call.message.answer(
+            text=text, reply_markup=about_topic(topic_id, start=progress <= 0)
+        )

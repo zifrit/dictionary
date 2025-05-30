@@ -22,6 +22,7 @@ router = Router()
 
 
 @router.callback_query(F.data.startswith("start_words"))
+@router.callback_query(F.data.startswith("continue_words"))
 async def start_study_words(
     call: CallbackQuery, db_session: AsyncSession, state: FSMContext
 ):
