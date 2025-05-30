@@ -235,17 +235,17 @@ class WordsManager(BaseManager[Words]):
         topic_id: int,
         tg_id: int,
     ) -> WordTrys:
-        random_word = await session.scalar(
-            select(self._model)
-            .where(self._model.topic_id == topic_id)
-            .order_by(func.random())
-        )
         word_trys = await session.scalar(
             select(WordTrys)
             .options(
                 joinedload(WordTrys.word).load_only(Words.word, Words.word_translation)
             )
-            .where(WordTrys.word_id == random_word.id, WordTrys.tg_user_id == tg_id)
+            .where(
+                WordTrys.topic_id == topic_id,
+                WordTrys.tg_user_id == tg_id,
+                WordTrys.trys != "✅✅✅✅✅",
+            )
+            .order_by(func.random())
         )
         return word_trys
 
