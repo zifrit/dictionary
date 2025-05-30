@@ -8,12 +8,10 @@ from contextlib import suppress
 from aiogram.exceptions import TelegramBadRequest
 
 from src.kbs.pagination import Pagination
-from src.states.dictionary import AddDictionary, SearchDictionary, SearchTopic
-from src.repository.dictionary import dictionary_manager, topic_manager
-from src.utils.parse_json_file import parse_json
+from src.states.dictionary import SearchDictionary, CreateNewDictionary
+from src.repository.dictionary import dictionary_manager
 from src.kbs.dictionary import about_dictionary
 from src.utils.pagination import pagination
-from src.kbs.other import move_to
 
 loger = logging.getLogger("admin_log")
 
@@ -21,46 +19,22 @@ loger = logging.getLogger("admin_log")
 router = Router()
 
 
-@router.message(F.text == "/add_topic")
-async def add_dictionary(message: Message, state: FSMContext):
-    await message.answer("Отправьте json файл")
-    await state.set_state(AddDictionary.file)
+@router.message(F.text == "/new_dictionary")
+async def new_dictionary(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Какое название словаря хотите ?")
+    await state.set_state(CreateNewDictionary.name)
 
 
-@router.message(~F.document, AddDictionary.file)
-async def get_wrong_document(message: Message):
-    await message.reply("Это не файл")
-
-
-@router.message(AddDictionary.file)
-async def get_right_document(message: Message, state: FSMContext):
-    file_name = message.document.file_name
-    if len(file_name.split(".")) > 2 and file_name.split(".")[-1] != "json":
-        await message.reply("Не верный формат файла")
-    else:
-        file_id = message.document.file_id
-        file = await message.bot.get_file(file_id)
-        file_path = file.file_path
-        downloaded_file = await message.bot.download_file(file_path)
-        try:
-            json_data = json.loads(downloaded_file.read().decode("utf-8"))
-        except json.decoder.JSONDecodeError:
-            await message.reply("В файле ошибка убедитесь что он соответсвуте шаблону")
-        else:
-            if await parse_json(
-                json_data,
-                bot=message.bot,
-                chat_id=message.chat.id,
-                tg_id=message.from_user.id,
-            ):
-                await message.reply("Проблема с данными")
-            else:
-                await message.reply("Данные успешно сохранились")
-                await state.clear()
+@router.message(CreateNewDictionary.name)
+async def get_topic_name(message: Message, state: FSMContext):
+    name = message.text
+    await message.reply("Введите название топика. Не больше 30 символов")
 
 
 @router.message(F.text == "/list_dictionary")
-async def list_dictionary(message: Message, db_session: AsyncSession):
+async def list_dictionary(message: Message, db_session: AsyncSession, state: FSMContext):
+    await state.clear()
     text, reply_markup = await pagination(
         session=db_session,
         count_data_in_page=3,
@@ -108,6 +82,7 @@ async def paginator_dictionary(
 
 @router.message(F.text == "/search_dictionary")
 async def search_dictionary(message: Message, state: FSMContext):
+    await state.clear()
     await message.answer("Введите идентификатор словаря")
     await state.set_state(SearchDictionary.dictionary_id)
 

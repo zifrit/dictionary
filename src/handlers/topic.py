@@ -1,3 +1,4 @@
+import json
 import logging
 from contextlib import suppress
 
@@ -9,14 +10,120 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.kbs.pagination import Pagination
 from src.kbs.topic import about_topic
-from src.states.dictionary import SearchTopic
+from src.states.dictionary import SearchTopic, AddTopicToDictionary
 from src.repository.dictionary import topic_manager, words_manager
 from src.utils.pagination import pagination
+from src.utils.parse_json_file import parse_json
 
 loger = logging.getLogger("admin_log")
 
 
 router = Router()
+
+
+@router.message(F.text == "/add_topic")
+async def add_topic_to_dictionary(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Идентификатор словаря")
+    await state.set_state(AddTopicToDictionary.dictionary_id)
+
+
+@router.message(AddTopicToDictionary.dictionary_id)
+async def get_topic_name(message: Message, state: FSMContext):
+    text = message.text
+    try:
+        dictionary_id = int(text)
+        await state.update_data(dictionary_id=dictionary_id)
+        await state.set_state(AddTopicToDictionary.name)
+        await message.reply("Введите название топика. Не больше 30 символов")
+    except ValueError:
+        await message.reply("Не правильный идентификатор")
+
+
+@router.message(~F.text, AddTopicToDictionary.name)
+async def get_wrong_topic_name(message: Message, state: FSMContext):
+    await message.reply("Не правильный тип данных")
+
+
+@router.message(AddTopicToDictionary.name)
+async def get_type_translation_topic(message: Message, state: FSMContext):
+    name = message.text
+    if len(name) > 30:
+        await message.answer("Название слишком длинное")
+    else:
+        await state.update_data(name=name)
+        await state.set_state(AddTopicToDictionary.type_translation)
+        await message.answer(
+            "Отправьте тип перевода т.е с какого на какой переводятся слова в топике.\nНапример:\n  en-ru (с английского на русский)\n  ru-en (с русского на английский"
+        )
+
+
+@router.message(~F.text, AddTopicToDictionary.type_translation)
+async def get_wrong_type_translation_topic(message: Message, state: FSMContext):
+    await message.reply("Не правильный тип данных")
+
+
+@router.message(AddTopicToDictionary.type_translation)
+async def get_wrong_type_translation_topic(message: Message, state: FSMContext):
+    type_translation = message.text
+    await state.update_data(type_translation=type_translation)
+    await state.set_state(AddTopicToDictionary.file)
+    await message.answer("Отправьте файл со словами и переводами")
+    await message.answer(
+        """
+Вот пример того как долже быть заполнен файл
+```json
+[
+    {
+        "word": "Слово которое хотите учить",
+        "translation": "Перевод слова",
+    },
+    {
+        "word": "Слово которое хотите учить",
+        "translation": "Перевод слова",
+    },
+
+    ...
+]
+```
+""",
+        parse_mode="Markdown",
+    )
+
+
+@router.message(~F.document, AddTopicToDictionary.file)
+async def get_wrong_topic_document(message: Message):
+    await message.reply("Это не файл")
+
+
+@router.message(AddTopicToDictionary.file)
+async def get_topic_document(message: Message, state: FSMContext):
+    file_name = message.document.file_name
+    if len(file_name.split(".")) > 2 and file_name.split(".")[-1] != "json":
+        await message.reply("Не верный формат файла")
+    else:
+        file_id = message.document.file_id
+        file = await message.bot.get_file(file_id)
+        file_path = file.file_path
+        downloaded_file = await message.bot.download_file(file_path)
+        try:
+            json_data = json.loads(downloaded_file.read().decode("utf-8"))
+        except json.decoder.JSONDecodeError:
+            await message.reply("В файле ошибка убедитесь что он соответствует шаблону")
+        else:
+            data = state.get_data()
+            if await parse_json(
+                json_data,
+                bot=message.bot,
+                chat_id=message.chat.id,
+                tg_id=message.from_user.id,
+                type_parse="create_topic",
+                item_data=data,
+            ):
+                await message.reply("Проблема с данными")
+            else:
+                await message.reply("Данные успешно сохранились")
+                await state.clear()
 
 
 @router.message(F.text == "/search_topic")

@@ -1,8 +1,15 @@
 from aiogram.fsm.state import StatesGroup, State
 
 
-class AddDictionary(StatesGroup):
+class AddTopicToDictionary(StatesGroup):
+    dictionary_id = State()
     file = State()
+    type_translation = State()
+    name = State()
+
+
+class CreateNewDictionary(StatesGroup):
+    name = State()
 
 
 class SearchDictionary(StatesGroup):

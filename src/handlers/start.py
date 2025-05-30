@@ -1,6 +1,7 @@
 import logging
 from aiogram import Router, F
 from aiogram.filters import CommandStart, CommandObject
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.repository.tg_user import tg_user_manager
@@ -37,7 +38,10 @@ async def start_handler(
 
 
 @router.message(F.text == "/add_me")
-async def add_tg_user_chat(message: Message, db_session: AsyncSession):
+async def add_tg_user_chat(
+    message: Message, db_session: AsyncSession, state: FSMContext
+):
+    await state.clear()
     if message.chat.id == message.from_user.id:
         await message.reply("Эта команда не доступна в личном чате")
     else:
