@@ -25,7 +25,7 @@ class Topic(IdCUDMixin):
     name: Mapped[str] = mapped_column(String(30), comment="Название топика")
     description: Mapped[str | None] = mapped_column(String(150), comment="Описание")
     words: Mapped[List["Words"]] = relationship(back_populates="topic")
-    dictionary_id: Mapped[int] = mapped_column(ForeignKey("dictionary.id"))
+    dictionary_id: Mapped[int | None] = mapped_column(ForeignKey("dictionary.id"))
     dictionary: Mapped["Dictionary"] = relationship(back_populates="topics")
     type_translation: Mapped[str] = mapped_column(
         String(), comment="Тип перевода"
